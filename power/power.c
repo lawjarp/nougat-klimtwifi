@@ -19,39 +19,38 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define LOG_TAG "KlimtWifiPowerHAL"
+#define LOG_TAG "Klimt PowerHAL"
 #include <utils/Log.h>
 
 #include <hardware/hardware.h>
 #include <hardware/power.h>
 
 #define TSP_POWER "/sys/class/input/input1/enabled"
-#define TOUCHKEY_POWER "/sys/class/input/input8/enabled"
-#define INPUT_POWER7 "/sys/class/input/input7/enabled"
-#define INPUT_POWER6 "/sys/class/input/input6/enabled"
-#define INPUT_POWER5 "/sys/class/input/input5/enabled"
-#define INPUT_POWER4 "/sys/class/input/input4/enabled"
-#define INPUT_POWER3 "/sys/class/input/input3/enabled"
-#define INPUT_POWER2 "/sys/class/input/input2/enabled"
 
-static void sysfs_write(char *path, char *s) {
-    char buf[80];
-    int len;
-    int fd = open(path, O_WRONLY);
+static int write_int(char const *path, int value)
+{
+    int fd;
+    static int already_warned;
 
-    if (fd < 0) {
-        strerror_r(errno, buf, sizeof(buf));
-        ALOGE("Error opening %s: %s\n", path, buf);
-        return;
+    already_warned = 0;
+
+//    ALOGE("write_int called: path %s, value %d", path, value);
+    fd = open(path, O_RDWR);
+
+    if (fd >= 0) {
+        char buffer[20];
+        int bytes = sprintf(buffer, "%d\n", value);
+//        ALOGE("write_int before write: path %s, value %s", path, buffer);
+        int amt = write(fd, buffer, bytes);
+        close(fd);
+        return amt == -1 ? -errno : 0;
+    } else {
+        if (already_warned == 0) {
+            ALOGE("write_int failed to open %s\n", path);
+            already_warned = 1;
+        }
+        return -errno;
     }
-
-    len = write(fd, s, strlen(s));
-    if (len < 0) {
-        strerror_r(errno, buf, sizeof(buf));
-        ALOGE("Error writing to %s: %s\n", path, buf);
-    }
-
-    close(fd);
 }
 
 static void power_init(struct power_module *module)
@@ -60,15 +59,8 @@ static void power_init(struct power_module *module)
 
 static void power_set_interactive(struct power_module *module, int on)
 {
-    ALOGD("%s: %s input devices", __func__, on ? "enabling" : "disabling");
-    sysfs_write(TSP_POWER, on ? "1" : "0");
-    sysfs_write(TOUCHKEY_POWER, on ? "1" : "0");
-    sysfs_write(INPUT_POWER2, on ? "1" : "0");
-    sysfs_write(INPUT_POWER3, on ? "1" : "0");
-    sysfs_write(INPUT_POWER4, on ? "1" : "0");
-    sysfs_write(INPUT_POWER5, on ? "1" : "0");
-    sysfs_write(INPUT_POWER6, on ? "1" : "0");
-    sysfs_write(INPUT_POWER7, on ? "1" : "0");
+    //ALOGD("%s: %s input devices", __func__, on ? "enabling" : "disabling");
+    write_int(TSP_POWER, on ? 1 : 0);
 }
 
 static void power_hint(struct power_module *module, power_hint_t hint,
@@ -89,7 +81,7 @@ struct power_module HAL_MODULE_INFO_SYM = {
         .module_api_version = POWER_MODULE_API_VERSION_0_2,
         .hal_api_version = HARDWARE_HAL_API_VERSION,
         .id = POWER_HARDWARE_MODULE_ID,
-        .name = "klimtwifi Power HAL",
+        .name = "Klimt Power HAL",
         .author = "The CyanogenMod Project",
         .methods = &power_module_methods,
     },
