@@ -29,12 +29,8 @@ PRODUCT_COPY_FILES += \
 DEVICE_PACKAGE_OVERLAYS += \
     device/samsung/klimtwifi/overlay
 
-# Radio
 PRODUCT_PROPERTY_OVERRIDES += \
-    ro.carrier=wifi-only \
-# Radio
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.radio.noril=yes
+    ro.carrier=wifi-only
 
 # setup dalvik vm configs.
 $(call inherit-product, frameworks/native/build/tablet-7in-xhdpi-2048-dalvik-heap.mk)
